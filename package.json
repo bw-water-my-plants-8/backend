@@ -7,10 +7,10 @@
     "migrate": "knex migrate:latest",
     "rollback": "knex migrate:rollback",
     "seed": "knex seed:run",
-    "migrateh": "heroku run knex migrate:latest -a YOUR_HEROKU_APP_NAME",
-    "rollbackh": "heroku run knex migrate:rollback -a YOUR_HEROKU_APP_NAME",
-    "databaseh": "heroku pg:psql -a YOUR_HEROKU_APP_NAME",
-    "seedh": "heroku run knex seed:run -a YOUR_HEROKU_APP_NAME",
+    "migrateh": "heroku run knex migrate:latest -a water-my-plants-8-api",
+    "rollbackh": "heroku run knex migrate:rollback -a water-my-plants-8-api",
+    "databaseh": "heroku pg:psql -a water-my-plants-8-api",
+    "seedh": "heroku run knex seed:run -a water-my-plants-8-api",
     "test": "cross-env NODE_ENV=testing jest --watchAll --verbose --runInBand",
     "deploy": "git push heroku main"
   },
@@ -20,6 +20,7 @@
   },
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "2.8.5",
     "dotenv": "10.0.0",
     "express": "4.17.1",
