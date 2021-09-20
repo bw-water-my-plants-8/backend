@@ -16,6 +16,10 @@ server.get('/', (req, res) => {
 
 server.use('/auth', authRouter)
 
+server.use('*', (req, res) => {
+  res.status(404).json({message: "This endpoint does not exist"})
+})
+
 server.use((err, req, res, next) => {//eslint-disable-line
   res.status(err.status || 500).json({ message: err.message })
 })
