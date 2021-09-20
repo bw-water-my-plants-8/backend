@@ -40,7 +40,7 @@ router.post(
             const token = tokenMaker(req.user)
             const user = {
                 username: req.user.username,
-                id: req.user.id,
+                user_id: req.user.user_id,
                 phone_number: req.user.phone_number
             }
             res.status(200).json({ message: `Welcome back ${user.username}`, token, user })
