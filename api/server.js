@@ -5,6 +5,8 @@ const cors = require('cors')
 const server = express()
 
 const authRouter = require('./auth/auth-router')
+const plantRouter = require('./plants/plants-router')
+const { restricted } = require('./auth/auth-middleware')
 
 server.use(express.json())
 server.use(helmet())
@@ -15,6 +17,7 @@ server.get('/', (req, res) => {
 })
 
 server.use('/auth', authRouter)
+server.use('/plants', restricted, plantRouter)
 
 server.use('*', (req, res) => {
   res.status(404).json({message: "This endpoint does not exist"})
