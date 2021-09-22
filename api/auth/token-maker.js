@@ -3,7 +3,8 @@ const { JWT_SECRET } = require('../../env-connect')
 
 function tokenMaker (user) {
     const payload = {
-        subject: user.id,
+        subject: user.user_id,
+        user_id: user.user_id,
         username: user.username,
         phone_number: user.phone_number
     }

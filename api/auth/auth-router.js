@@ -23,7 +23,8 @@ router.post(
             const {phone_number} = req;
             const hash = bcrypt.hashSync(password, BCRYPT_ROUNDS)
             const newUser = await Users.insert({username, phone_number, password: hash});
-            res.status(201).json(newUser);
+            const token = tokenMaker(newUser)
+            res.status(201).json({user: newUser, token});
         }catch (err){
             next(err);
         }

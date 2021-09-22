@@ -13,7 +13,7 @@ async function validatePayload (req, res, next) {
         if (err.errors){
             next({ status: 400, message: err.errors[0] });
         }else{
-            next({ status: 400, message: err });
+            next({ status: 400, message: err.message });
         }
     }
 }

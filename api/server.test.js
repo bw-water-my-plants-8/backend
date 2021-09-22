@@ -1,6 +1,7 @@
 const request = require('supertest')
 const server = require('./server')
 const db = require('../data/db-config')
+const tokenMaker = require('./auth/token-maker')
 
 beforeAll(async () => {
   await db.migrate.rollback()
@@ -102,7 +103,7 @@ describe('[POST] /auth/register', () => {
       .post('/auth/register')
       .send(input)
     expect(res.status).toBe(201)
-    expect(res.body.username).toBe(input.username)
+    expect(res.body.user.username).toBe(input.username)
   })
   it('[10] does not save the password as plain text', async() => {
       const res = await request(server)
@@ -152,5 +153,196 @@ describe('[POST] /auth/login', () => {
       .send(input)
     expect(res.status).toBe(200)
     expect(res.body.token).toBeDefined
+  })
+})
+
+describe('[GET] /plants', () => {
+  const token = tokenMaker({
+    user_id: 1,
+    username: 'bob',
+    phone_number: '+17175553333'
+  })
+  it('responds with an array of plants', async () => {
+    const res = await request(server)
+      .get('/plants')
+      .set('Authorization', token)
+    const expected = {
+      species: 'houseplant',
+      nickname: 'Spunky',
+      h2oFrequency: {
+        frequency: 1,
+        timeframe: 'day'
+      }
+    }
+    expect(res.status).toBe(200)
+    expect(res.body[0]).toMatchObject(expected)
+  })
+})
+
+describe('[POST] /plants', () => {
+  const token = tokenMaker({
+    user_id: 1,
+    username: 'bob',
+    phone_number: '+17175553333'
+  })
+  const input1 = {
+    species: 'houseplant',
+    frequency: 1,
+    timeframe: 'day',
+    nickname: 'Poogy'
+  }
+  const input2 = {
+    species: 'fycus',
+    frequency: 1,
+    timeframe: 'day',
+    nickname: 'Mochi'
+  }
+  it('returns a 201', async () => {
+    const res = await request(server)
+      .post('/plants')
+      .set('Authorization', token)
+      .send(input1)
+    expect(res.status).toBe(201)
+  })
+  it('adds a new plant to the database', async () => {
+    await request(server)
+      .post('/plants')
+      .set('Authorization', token)
+      .send(input1)
+    const plants = await db('plants')
+    expect(plants).toHaveLength(2)
+  })
+  it('responds with the new plant', async () => {
+    const res = await request(server)
+      .post('/plants')
+      .set('Authorization', token)
+      .send(input1)
+    const expected = {species: input1.species, nickname: input1.nickname}
+    expect(res.body).toMatchObject(expected)
+  })
+  it('creates a new species when a new string is used', async () => {
+    await request(server)
+      .post('/plants')
+      .set('Authorization', token)
+      .send(input2)
+    const species = await db('species')
+    expect(species).toHaveLength(2)
+  })
+})
+
+describe('[PUT] /plants/:plant_id', () => {
+  const token = tokenMaker({
+    user_id: 1,
+    username: 'bob',
+    phone_number: '+17175553333'
+  })
+  const input1 = {
+    "plant_id": 1,
+    "nickname": "Monty",
+    "species": "houseplant",
+    "frequency": 1,
+    "timeframe": "day",
+    "last_watered": null,
+    "next_water": null
+  }
+  const input2 = {
+    "plant_id": 1,
+    "nickname": "Monty",
+    "species": "fycus",
+    "frequency": 1,
+    "timeframe": "day",
+    "last_watered": null,
+    "next_water": null
+  }
+  it('updates the record', async () => {
+    await request(server)
+      .put('/plants/1')
+      .set('Authorization', token)
+      .send(input1)
+    const plant = await db('plants').where('plant_id', 1).first()
+    expect(plant).toMatchObject({nickname: input1.nickname})
+  })
+  it('returns 200 okay', async () => {
+    const res = await request(server)
+      .put('/plants/1')
+      .set('Authorization', token)
+      .send(input1)
+    expect(res.status).toBe(200)
+  })
+  it('returns the updated object', async () => {
+    const res = await request(server)
+      .put('/plants/1')
+      .set('Authorization', token)
+      .send(input1)
+    expect(res.body).toMatchObject({nickname: input1.nickname})
+  })
+  it('creates a new species on new string', async () => {
+    await request(server)
+      .put('/plants/1')
+      .set('Authorization', token)
+      .send(input2)
+    const species = await db('species')
+    expect(species).toHaveLength(2)
+  })
+})
+
+describe('[PUT] /plants/:plant_id/water', () => {
+  const token = tokenMaker({
+    user_id: 1,
+    username: 'bob',
+    phone_number: '+17175553333'
+  })
+  const input1 = {
+    "plant_id": 1,
+    "nickname": "Spunky",
+    "species": "houseplant",
+    "frequency": 1,
+    "timeframe": "day",
+    "last_watered": null,
+    "next_water": null
+  }
+  it('responds with 200 okay', async () => {
+    const res = await request(server)
+      .put('/plants/1/water')
+      .set('Authorization', token)
+      .send(input1)
+    expect(res.status).toBe(200)
+  })
+  it('sets last watered to current date', async () => {
+    const res = await request(server)
+      .put('/plants/1/water')
+      .set('Authorization', token)
+      .send(input1)
+    const expected = Date.now()
+    expect(res.body.last_watered).toBe(new Date(expected).toDateString())
+  })
+  it('sets next water to future date', async () => {
+    const res = await request(server)
+      .put('/plants/1/water')
+      .set('Authorization', token)
+      .send(input1)
+    const expected = Date.now() + (24 * 60 * 60 * 1000)
+    expect(res.body.next_water).toBe(new Date(expected).toDateString())
+  })
+})
+
+describe('[DELETE] /plants/:plant_id', () => {
+  const token = tokenMaker({
+    user_id: 1,
+    username: 'bob',
+    phone_number: '+17175553333'
+  })
+  it('deletes a record', async () => {
+    await request(server)
+      .delete('/plants/1')
+      .set('Authorization', token)
+    const plants = await db('plants')
+    expect(plants).toHaveLength(0)
+  })
+  it('returns the deleted object', async () => {
+    const res = await request(server)
+      .delete('/plants/1')
+      .set('Authorization', token)
+    expect(res.body).toMatchObject({plant_id: 1, nickname: 'Spunky'})
   })
 })
