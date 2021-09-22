@@ -2,12 +2,12 @@ const db = require('../../data/db-config')
 
 async function getByUser (user_id) {
     const rows = await db('plants as p')
-        .where('user_id', user_id)
+        .where('p.user_id', user_id)
         .leftJoin('species as s', 's.species_id', 'p.species_id')
     const plants = rows.map(plant => {return {
         plant_id: plant.plant_id,
-        nickname: plant.plant_id,
-        species: plant.species,
+        nickname: plant.nickname,
+        species: plant.species_name,
         h2oFrequency: {
             frequency: plant.frequency,
             timeframe: plant.timeframe
@@ -20,12 +20,13 @@ async function getByUser (user_id) {
 
 async function getById (plant_id) {
     const row = await db('plants as p')
-        .where('plant_id', plant_id)
+        .where('p.plant_id', plant_id)
         .leftJoin('species as s', 's.species_id', 'p.species_id')
         .first()
     return {
+        user_id: row.user_id,
         plant_id: row.plant_id,
-        nickname: row.plant_id,
+        nickname: row.nickname,
         species: row.species_name,
         h2oFrequency: {
             frequency: row.frequency,
@@ -39,7 +40,7 @@ async function getById (plant_id) {
 async function getFrequencyBySpecies (species) {
     const rows = await db('plants as p')
         .leftJoin('species as s', 's.species_id', 'p.species_id')
-        .where('species_name', species)
+        .where('s.species_name', species)
         .select('s.species_name', 'p.frequency', 'p.timeframe')
     const h2oFrequency = rows.map(plant => {return {
         frequency: plant.frequency,
@@ -53,14 +54,15 @@ async function getFrequencyBySpecies (species) {
 
 async function add (user_id, plant) {
     try {
-        const [id] = await db.transaction(async trx => {
-            const [plant_species] = trx('species').where('species_name', plant.species)
+        const [newId] = await db.transaction(async trx => {
+            const [plant_species] = await trx('species').where('species_name', plant.species)
             let species_id
             if (plant_species){
                 species_id = plant_species.species_id
             } else {
-                species_id = await trx('species')
+                const [newSpecies] = await trx('species')
                     .insert({species_name: plant.species}, ['species_id'])
+                species_id = newSpecies.species_id
             }
             return trx('plants')
                 .insert({
@@ -71,7 +73,7 @@ async function add (user_id, plant) {
                     timeframe: plant.timeframe
                 }, ['plant_id'])
         })
-        return getById(id)
+        return getById(newId.plant_id)
     }catch (err){
         console.error(err)
         throw err
@@ -80,14 +82,15 @@ async function add (user_id, plant) {
 
 async function update (plant_id, plant) {
     try {
-        const [id] = await db.transaction(async trx => {
-            const [plant_species] = trx('species').where('species_name', plant.species)
+        const [newId] = await db.transaction(async trx => {
+            const [plant_species] = await trx('species').where('species_name', plant.species)
             let species_id
             if (plant_species){
                 species_id = plant_species.species_id
             } else {
-                species_id = await trx('species')
+                const [newSpecies] = await trx('species')
                     .insert({species_name: plant.species}, ['species_id'])
+                species_id = newSpecies.species_id
             }
             return trx('plants')
                 .where('plant_id', plant_id)
@@ -100,7 +103,7 @@ async function update (plant_id, plant) {
                     next_water: plant.next_water || null
                 }, ['plant_id'])
         })
-        return getById(id)
+        return getById(newId.plant_id)
     }catch (err){
         console.error(err)
         throw err
@@ -109,7 +112,7 @@ async function update (plant_id, plant) {
 
 async function remove (plant_id) {
     const plant = await getById(plant_id)
-    await db('plants').where('plant_id', plant_id).module
+    await db('plants').where('plant_id', plant_id).del()
     return plant
 }
 

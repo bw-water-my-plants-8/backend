@@ -5,7 +5,7 @@ exports.up = async function(knex) {
         table.string('species_name').notNullable().unique()
     })
     await knex.schema.createTable('plants', table => {
-        table.increments('plants_id')
+        table.increments('plant_id')
         table.integer('species_id')
             .unsigned()
             .notNullable()
