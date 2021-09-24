@@ -13,6 +13,15 @@ router.get('/', async (req, res, next) => {
     }
 })
 
+router.get('/:plant_id', validateUser, async (req, res, next) => {
+    try {
+        const plant = await Plants.getById(req.params.plant_id)
+        res.status(200).json(plant)
+    } catch (err) {
+        next(err)
+    }
+})
+
 router.post('/', checkFrequency, async (req, res, next) => {
     try {
         const plant = await Plants.add(req.decodedJWT.subject, req.body)
