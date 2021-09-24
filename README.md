@@ -16,6 +16,8 @@ Restricted endpoints can only be accessed with a valid token in the authorizatio
 
 [GET] /plants : Returns an array of plant objects.
 
+[GET] /plants/:plant_id : Returns the plant object.
+
 [POST] /plants : Requires a plant object, {species (string), frequency (integer), timeframe (string), nickname (optional string)}. Returns the newly created plant object.
 
 [PUT] /plants/:plant_id : Requires a plant object (same as above, though may include last_watered and next_water strings) and returns the updated object.

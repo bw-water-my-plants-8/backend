@@ -179,6 +179,29 @@ describe('[GET] /plants', () => {
   })
 })
 
+describe('[GET] /plants/:plant_id', () => {
+  const token = tokenMaker({
+    user_id: 1,
+    username: 'bob',
+    phone_number: '+17175553333'
+  })
+  it('responds with a plant object', async () => {
+    const res = await request(server)
+      .get('/plants/1')
+      .set('Authorization', token)
+    const expected = {
+      species: 'houseplant',
+      nickname: 'Spunky',
+      h2oFrequency: {
+        frequency: 1,
+        timeframe: 'day'
+      }
+    }
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject(expected)
+  })
+})
+
 describe('[POST] /plants', () => {
   const token = tokenMaker({
     user_id: 1,
