@@ -1,8 +1,29 @@
 const phone = require("libphonenumber");
 const schema = require("./userPayloadSchema");
 const { findBy } = require("./users-model");
+const Users = require("../users/users-model");
 
-async function validatePayload(req, res, next) {
+exports.logger = (req, res, next) => {
+  console.log("METHOD: ", req.method);
+  console.log("REQUEST_BODY: ", req.body);
+  next();
+};
+exports.validateUserExist = async (req, res, next) => {
+  try {
+    const { username } = req.body;
+    const data = await Users.findBy(username).first();
+    data
+      .then((user) => {
+        next();
+      })
+      .catch((err) => {
+        res.status(400);
+      });
+  } catch (err) {
+    next(err);
+  }
+};
+exports.validatePayload = async (req, res, next) => {
   try {
     //If doing 10-digit US numbers only:
     //req.body.phone = ['+1', req.body.phone].join('')
@@ -18,9 +39,9 @@ async function validatePayload(req, res, next) {
       next({ status: 400, message: err });
     }
   }
-}
+};
 
-function validateLoginPayload(req, res, next) {
+exports.validateLoginPayload = async (req, res, next) => {
   const { username, password } = req.body;
   if (username && password) {
     console.log("validateLoginPayload: passed");
@@ -29,9 +50,9 @@ function validateLoginPayload(req, res, next) {
     console.log("validateLoginPayload: failed");
     next({ status: 400, message: "username and password are required" });
   }
-}
+};
 
-async function checkUsernameAvailable(req, res, next) {
+exports.checkUsernameAvailable = async (req, res, next) => {
   const [user] = await findBy({ username: req.body.username });
   if (user) {
     console.log("checkUsernameAvailable: passed");
@@ -40,9 +61,9 @@ async function checkUsernameAvailable(req, res, next) {
     console.log("checkUsernameAvailable: failed");
     next();
   }
-}
+};
 
-async function checkPhoneAvailable(req, res, next) {
+exports.checkPhoneAvailable = async (req, res, next) => {
   const [user] = await findBy({ phone_number: req.phone_number });
   if (user) {
     console.log("checkPhoneAvailable: failed");
@@ -51,9 +72,9 @@ async function checkPhoneAvailable(req, res, next) {
     console.log("checkPhoneAvailable: passed");
     next();
   }
-}
+};
 
-async function checkUsernameExists(req, res, next) {
+exports.checkUsernameExists = async (req, res, next) => {
   const [user] = await findBy({ username: req.body.username });
   if (user) {
     console.log("checkUsernameExists: passed");
@@ -63,12 +84,4 @@ async function checkUsernameExists(req, res, next) {
     console.log("checkUsernameExists: failed");
     next({ status: 401, message: "username or password invalid" });
   }
-}
-
-module.exports = {
-  validatePayload,
-  checkUsernameAvailable,
-  checkPhoneAvailable,
-  validateLoginPayload,
-  checkUsernameExists,
 };
